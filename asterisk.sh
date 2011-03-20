@@ -1,4 +1,4 @@
-#!/opt/bin/bash
+#!/bin/bash
 # HSMMN PBX Build and Setup Script
 # v0.3.0 (C) Alex Casanova / Rodrigo de la Fuente
 # HSMMN Project 2011
@@ -6,19 +6,16 @@
 # kate: tab-width 4; indent-width 4; replace-tabs false;
 #
 
-
 #####################################################################
 # Compilation and installation DIR. Applications version
-
-COMPILE_DIR=/opt/asterisk/src
-INSTALL_DIR=/opt/asterisk
 
 ASTERISK_VERSION=1.8.2.3
 DAHDI_VERSION=2.4.0+2.4.0
 LIBPRI_VERSION=1.4.11.5
 ADDONS_VERSION=1.6.2.3
 
-
+COMPILE_DIR=/opt/asterisk/src
+INSTALL_DIR=/opt/asterisk
 
 #####################################################################
 # Print warning message.
@@ -27,6 +24,7 @@ function warning()
 {
     echo "$*" >&2
 }
+
 
 #####################################################################
 # Print error message and exit.
@@ -126,6 +124,7 @@ function yesno()
     [[ "$ans" = "y" || "$ans" == "yes" ]]
 }
 
+
 #####################################################################
 # Main execution
 
@@ -135,16 +134,30 @@ function yesno()
 [ ! -d "$INSTALL_DIR" ] && echo "Installation dir $INSTALL_DIR not found." && exit -1
 [ ! -d "$COMPILE_DIR" ] && echo "Compilation dir $COMPILE_DIR not found." && exit -2
 
-which aptitude && aptitude install -y build-essential linux-headers-`uname -r` libncurses5-dev libmysqlclient15-dev libxml2-dev
+mkdir -p $COMPILE_DIR/asterisk-`date +%F_%H-%M-%S`
+ASTERISK_COMPILE_DIR=$COMPILE_DIR/asterisk-`date +%F_%H-%M-%S`
+
+# If our system is Debian or Ubuntu, check for the necessary development packages 
+which aptitude > /dev/null
+if [ $? = 0 ]; then
+    if [ "$(dpkg -l build-essential linux-headers-`uname -r` libncurses5-dev libmysqlclient-dev libxml2-dev | grep -E "^ii  " | wc -l)" -ne "5" ]; then
+        echo "We need to install some development packages for you. Please enter root password"
+        sudo aptitude install -y build-essential linux-headers-`uname -r` libncurses5-dev libmysqlclient15-dev libxml2-dev
+    fi
+fi
+
 
 #####################################################################
 # Create the main compilation directories
 
-echo =========== Asterisk Framework ========
-mkdir -p $COMPILE_DIR/asterisk-`date +%F_%H-%M-%S`
-cd $COMPILE_DIR/asterisk-`date +%F_%H-%M-%S`
-mkdir src
+echo "** Asterisk installation **"
+echo "We are going to download, extract, compile and install the asterisk framework on these directories:"
+echo "Installation dir: $INSTALL_DIR"
+echo "Compilation dir: $COMPILE_DIR"
 
+echo "But first, we need to ask some questions to you."
+
+echo "** Optional packages **"
 if yesno --timeout 10 --default yes "Download, compile, and install libpri: yes or no (default yes)? "; then
 	LIBPRI=yes
 fi
@@ -157,83 +170,74 @@ if yesno --timeout 10 --default yes "Download, compile, and install asterisk-add
 	ADDONS=yes
 fi
 
+
 #####################################################################
 # libpri optional installation
 
 if [ ! -z $LIBPRI ]; then
-	echo ============= Now retrieving packages.... ======
-	wget http://downloads.asterisk.org/pub/telephony/libpri/releases/libpri-$LIBPRI_VERSION.tar.gz
-	mv libpri-$LIBPRI_VERSION.tar.gz src
+    echo "** LIBPRI **"
+	echo "* Retrieving packages..."
+	wget -q -O - http://downloads.asterisk.org/pub/telephony/libpri/releases/libpri-$LIBPRI_VERSION.tar.gz | tar zx -C $ASTERISK_COMPILE_DIR
 
-	echo  ============= Uncompressing packages.... ======
-	tar -vxzf src/libpri-$LIBPRI_VERSION.tar.gz
-
-	echo  ============= Compiling packages.... ======
-	cd libpri-$LIBPRI_VERSION
-	make
-	make install DESTDIR=$INSTALL_DIR || exit -1
-	cd ..
+	echo "* Compiling packages..."
+	cd $ASTERISK_COMPILE_DIR/libpri-$LIBPRI_VERSION
+	make >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	echo "* Installing packages..."
+	make install DESTDIR=$INSTALL_DIR >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	echo "* Done."
 fi
+
 
 #####################################################################
 # Dahdi optional installation
 
 
 if [ ! -z $DAHDI ]; then
-	echo ============= Now retrieving packages.... ======
-	wget http://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/releases/dahdi-linux-complete-$DAHDI_VERSION.tar.gz
-	mv dahdi-linux-complete-$DAHDI_VERSION.tar.gz src
+    echo "** DAHDI **"
+	echo "* Retrieving packages..."
+	wget -q -O - http://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/releases/dahdi-linux-complete-$DAHDI_VERSION.tar.gz | tar zx -C $ASTERISK_COMPILE_DIR
+	echo "* Compiling packages..."
+	cd $ASTERISK_COMPILE_DIR/dahdi-linux-complete-$DAHDI_VERSION
+	make >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
 
-	echo  ============= Uncompressing packages.... ======
-	tar -vxzf src/dahdi-linux-complete-$DAHDI_VERSION.tar.gz
-
-	echo  ============= Compiling packages.... ======
-	cd dahdi-linux-complete-$DAHDI_VERSION
-
-	make || exit -1
-	make install || exit -1
-	make config || exit -1
-	make samples || exit -1
-	cd ..
+	echo "* Installing packages..."
+	make install >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	make config >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	make samples >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	echo "* Done."
 fi
+
 
 #####################################################################
 # Asterisk installation
 
-echo ============= Now retrieving packages.... ======
-wget http://downloads.asterisk.org/pub/telephony/asterisk/releases/asterisk-$ASTERISK_VERSION.tar.gz
-mv asterisk-$ASTERISK_VERSION.tar.gz src
+echo "Asterisk"
+echo "* Retrieving packages..."
+wget -q -O - http://downloads.asterisk.org/pub/telephony/asterisk/releases/asterisk-$ASTERISK_VERSION.tar.gz | tar zx -C $ASTERISK_COMPILE_DIR
 
-echo  ============= Uncompressing packages.... ======
-tar -vxzf src/asterisk-$ASTERISK_VERSION.tar.gz
-
-echo  ============= Compiling packages.... ======
-cd asterisk-$ASTERISK_VERSION
-./configure --prefix=$INSTALL_DIR
-make
-make install
-make config
-make samples
+echo "* Compiling packages..."
+cd $ASTERISK_COMPILE_DIR/asterisk-$ASTERISK_VERSION
+./configure --prefix=$INSTALL_DIR >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+make >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+make install >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+make config >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+make samples >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
 
 
 #####################################################################
 # Asterisk ADDONS optional installation
 
 if [ ! -z $ADDONS ]; then
-	echo ============= Now retrieving packages.... ======
-	wget http://downloads.asterisk.org/pub/telephony/asterisk/releases/asterisk-addons-$ADDONS_VERSION.tar.gz
-	mv asterisk-addons-$ADDONS_VERSION.tar.gz src
-
-	echo  ============= Uncompressing packages.... ======
-	tar -vxzf src/asterisk-addons-$ADDONS_VERSION.tar.gz
-
-	echo  ============= Compiling packages.... ======
-	cd asterisk-addons-$ADDONS_VERSION
-	./configure --prefix=$INSTALL_DIR
-	make || exit -1
-	make install || exit -1
-	make config || exit -1
-	make samples || exit -1
+    echo "Asterisk Addons"
+    echo "* Retrieving packages..."
+	wget -q -O - http://downloads.asterisk.org/pub/telephony/asterisk/releases/asterisk-addons-$ADDONS_VERSION.tar.gz | tar zx -C $ASTERISK_COMPILE_DIR
+    echo "* Compiling packages..."
+	cd $ASTERISK_COMPILE_DIR/asterisk-addons-$ADDONS_VERSION
+	./configure --prefix=$INSTALL_DIR >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	make >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	make install >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	make config >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
+	make samples >> $ASTERISK_COMPILE_DIR/compile.log || exit -1
 	cd ..
 fi
 
@@ -249,42 +253,24 @@ wget -O $INSTALL_DIR/lib/asterisk/modules http://asterisk.hosting.lv/bin/codec_g
 
 # Codec G723
 echo "Configurando Codec G.723"
-wget http://asterisk.hosting.lv/bin/codec_g723-ast18-gcc4-glibc-pentium.so
+wget -O $INSTALL_DIR/lib/asterisk/modules http://asterisk.hosting.lv/bin/codec_g723-ast18-gcc4-glibc-pentium.so
  
 
-#-----------------------------------------------------------------------
-#
-# Configuracion de voces en Espanyol
-#                          
-#----------------------------------------------------------------------
- 
+#####################################################################
+# Instalación de voces en Espanyol
+
 echo =========== Spanish Sounds Installation ========
-# Descargamos los ficheros de voces en Espanyol
-cd $COMPILE_DIR
 echo "Descargando el conjunto de voces en espanyol de Alberto Sagredo"
 echo "esta descarga varia en funcion de la conexion de Internet que"
 echo "tenga el equipo, aproximadamente descargando >50MB"
-wget http://www.voipnovatos.es/voces/voipnovatos-extra-sounds-es-g729-1.4.tar.gz
-wget http://www.voipnovatos.es/voces/voipnovatos-extra-sounds-es-alaw-1.4.tar.gz
-wget http://www.voipnovatos.es/voces/voipnovatos-extra-sounds-es-ulaw-1.4.tar.gz
-wget http://www.voipnovatos.es/voces/voipnovatos-extra-sounds-es-gsm-1.4.tar.gz
-wget http://www.voipnovatos.es/voces/voipnovatos-core-sounds-es-g729-1.4.tar.gz
-wget http://www.voipnovatos.es/voces/voipnovatos-core-sounds-es-alaw-1.4.tar.gz
-wget http://www.voipnovatos.es/voces/voipnovatos-core-sounds-es-ulaw-1.4.tar.gz
-wget http://www.voipnovatos.es/voces/voipnovatos-core-sounds-es-gsm-1.4.tar.gz
-wget http://www.voipnovatos.es/voces/asterisk-voces-es-v1_2-moh-voipnovatos.tar.gz
+wget -q -O - http://www.voipnovatos.es/voces/voipnovatos-extra-sounds-es-g729-1.4.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
+wget -q -O - http://www.voipnovatos.es/voces/voipnovatos-extra-sounds-es-alaw-1.4.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
+wget -q -O - http://www.voipnovatos.es/voces/voipnovatos-extra-sounds-es-ulaw-1.4.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
+wget -q -O - http://www.voipnovatos.es/voces/voipnovatos-extra-sounds-es-gsm-1.4.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
+wget -q -O - http://www.voipnovatos.es/voces/voipnovatos-core-sounds-es-g729-1.4.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
+wget -q -O - http://www.voipnovatos.es/voces/voipnovatos-core-sounds-es-alaw-1.4.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
+wget -q -O - http://www.voipnovatos.es/voces/voipnovatos-core-sounds-es-ulaw-1.4.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
+wget -q -O - http://www.voipnovatos.es/voces/voipnovatos-core-sounds-es-gsm-1.4.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
+wget -q -O - http://www.voipnovatos.es/voces/asterisk-voces-es-v1_2-moh-voipnovatos.tar.gz | tar zx -C $INSTALL_DIR/var/lib/asterisk/sounds
 
-# Descomprimismos las voces en Espanyol
-echo "======== Installing files ================"
-mkdir -p $INSTALL_DIR/var/lib/asterisk
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/voipnovatos-extra-sounds-es-g729-1.4.tar.gz
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/voipnovatos-extra-sounds-es-alaw-1.4.tar.gz
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/voipnovatos-extra-sounds-es-ulaw-1.4.tar.gz
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/voipnovatos-extra-sounds-es-gsm-1.4.tar.gz
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/voipnovatos-core-sounds-es-g729-1.4.tar.gz
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/voipnovatos-core-sounds-es-alaw-1.4.tar.gz
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/voipnovatos-core-sounds-es-ulaw-1.4.tar.gz
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/voipnovatos-core-sounds-es-gsm-1.4.tar.gz
-tar xvzf -C $INSTALL_DIR/var/lib/asterisk/sounds $COMPILE_DIR/asterisk-voces-es-v1_2-moh-voipnovatos.tar.gz
-
-echo  ============= Compilation finished.  ======
+echo  ===== Finished.  ======
