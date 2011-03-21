@@ -1,0 +1,6 @@
+Script de auto-instalación/configuración de asterisk.
+
+TODO:
+* Probado 100% la instalación de asterisk, falta probar librerías adicionales.
+* Probado en Ubuntu, hay que probar en más plataformas.
+* Añadir más opciones en las voces de idiomas (català).
