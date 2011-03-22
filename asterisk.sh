@@ -237,7 +237,17 @@ wget -q -O - http://downloads.asterisk.org/pub/telephony/asterisk/releases/aster
 
 echo "* Compiling packages..."
 cd $ASTERISK_COMPILE_DIR/asterisk-$ASTERISK_VERSION
-./configure --prefix=$INSTALL_DIR >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
+OPTS=""
+if [ ! -z $LIBPRI ]; then
+    OPTS=" --with-pri=$INSTALL_DIR"
+fi
+
+if [ ! -z $DAHDI ]; then
+    OPTS=" --with-dahdi=$INSTALL_DIR"
+fi
+
+./configure --prefix=$INSTALL_DIR $OPTS >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
+
 make >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
 echo "* Installing packages..."
 make install >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
