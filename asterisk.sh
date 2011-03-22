@@ -254,7 +254,7 @@ if [ ! -z $ADDONS ]; then
 	wget -q -O - http://downloads.asterisk.org/pub/telephony/asterisk/releases/asterisk-addons-$ADDONS_VERSION.tar.gz | tar zx -C $ASTERISK_COMPILE_DIR
     echo "* Compiling packages..."
 	cd $ASTERISK_COMPILE_DIR/asterisk-addons-$ADDONS_VERSION
-	./configure --prefix=$INSTALL_DIR >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
+	./configure --prefix=$INSTALL_DIR --with-asterisk=$INSTALL_DIR --includedir=$INSTALl_DIR/include >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
 	make >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
 	make install >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
 	make config >> $ASTERISK_COMPILE_DIR/compile.log 2>&1 || raise
