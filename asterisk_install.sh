@@ -9,10 +9,10 @@
 #####################################################################
 # Compilation and installation DIR. Applications version
 
-ASTERISK_VERSION=1.8.2.3
-DAHDI_VERSION=2.4.0+2.4.0
-LIBPRI_VERSION=1.4.11.5
-ADDONS_VERSION=1.6.2.3
+ASTERISK_VERSION=1.8.5.0
+DAHDI_VERSION=2.4.1.2+2.4.1
+LIBPRI_VERSION=1.4.12
+ADDONS_VERSION=1.6.2.4
 
 COMPILE_DIR=/opt/asterisk/src
 INSTALL_DIR=/opt/asterisk
