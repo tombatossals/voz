@@ -8,7 +8,10 @@
 #####################################################################
 # Asterisk configuration
 
-CONFIG_DIR=/opt/asterisk/etc/asterisk
+[ -d /opt/asterisk/etc/asterisk ] && CONFIG_DIR=/opt/asterisk/etc/asterisk
+[ -d /etc/asterisk ] && CONFIG_DIR=/etc/asterisk
+
+[ ! -z "$CONFIG_DIR" ] || (echo "No asterisk installation found. Edit this script to configure the Asterisk installation PATH"; exit -1)
 
 #####################################################################
 # Print warning message.
@@ -163,7 +166,7 @@ while [ -z "$FQDN" ]; do
     read FQDN; 
 done
 while [ -z "$LOCALNET" ]; do 
-    echo -n "The LOCALNET parameter of your network (example: 192.168.1.1/255.255.255.0): "
+    echo -n "The LOCALNET parameter of your network (example: 10.0.0.0/8): "
     read LOCALNET; 
 done
 if yesno "Backup your actual Asterisk configuration directory? "; then
