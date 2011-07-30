@@ -1,5 +1,13 @@
 Scripts de auto-instalación/configuración de asterisk.
 
+asterisk_install.sh
+-------------------
+Descarga, compila e instala la última distribución Asterisk, preparándola para integrarla en el entorno de Asterisk federados.
+
+asterisk_configure.sh
+---------------------
+Aplica la configuración necesaria en Asterisk para integrarlo en la infraestructura. Necesita que previamente hayas registrado la centralita en la web de guifi.net.
+
 TODO:
 * Probado 100% la instalación de asterisk, falta probar librerías adicionales.
 * Probado en Ubuntu, hay que probar en más plataformas.
