@@ -8,6 +8,10 @@ asterisk_configure.sh
 ---------------------
 Aplica la configuración necesaria en Asterisk para integrarlo en la infraestructura. Necesita que previamente hayas registrado la centralita en la web de guifi.net.
 
+generate_cron_job.sh
+--------------------
+Nos hace un par de preguntas relativas a nuestro servicio y crea un script de actualización automática del archivo sip.local.conf, que es conveniente poner en un cron cada X minutos.
+
 TODO:
 * Probado 100% la instalación de asterisk, falta probar librerías adicionales.
 * Probado en Ubuntu, hay que probar en más plataformas.
