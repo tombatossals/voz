@@ -1,0 +1,19 @@
+#!/bin/bash
+
+ASTERISK_CONFIG_DIR=/opt/asterisk/etc/asterisk
+[ -d "$ASTERISK_CONFIG_DIR" ] || (echo "The asterisk configuration dir is not found."; exit -1)
+
+SIPLOCAL=$ASTERISK_CONFIG_DIR/sip.local.conf
+[ -f "$SIPLOCAL" ] || touch $ASTERISK_CONFIG_DIR/sip.local.conf
+TMP=$(mktemp)
+
+wget --timeout=240 {{URL}} -qO $TMP
+OK=`cat $TMP|wc -l`
+NEW=`diff $SIPLOCAL $TMP|wc -l`
+if [ $OK != "0" ]; then
+  if [ $NEW != "0" ]; then
+    cp $TMP $SIPLOCAL
+    asterisk -rx 'sip reload'
+  fi;
+fi;
+rm -f $TMP
