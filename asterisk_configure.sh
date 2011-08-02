@@ -169,6 +169,15 @@ while [ -z "$LOCALNET" ]; do
     echo -n "The LOCALNET parameter of your network (example: 10.0.0.0/8): "
     read LOCALNET; 
 done
+
+if yesno --default no "Add another LOCALNET parameter (default no)?"; then
+    echo -n "The second LOCALNET parameter of your network (example: 10.0.0.0/8): "
+    read LOCALNET2; 
+    LOCALNET2="localnet=$LOCALNET2"
+else
+    LOCALNET2=""
+fi
+
 if yesno "Backup your actual Asterisk configuration directory? "; then
   BACKUP_DIR=$CONFIG_DIR.$(date +"%Y-%m-%d")
   C=0
@@ -191,6 +200,7 @@ sed -i s/"{{USERNAME}}"/"$KAMAILIO_USERNAME"/g $CONFIG_DIR/sip.trunk.conf
 sed -i s/"{{PASSWORD}}"/"$KAMAILIO_PASSWORD"/g $CONFIG_DIR/sip.trunk.conf
 sed -i s/"{{FQDN}}"/"$FQDN"/g $CONFIG_DIR/sip.conf
 sed -i s@"{{LOCALNET}}"@"$LOCALNET"@g $CONFIG_DIR/sip.conf
+sed -i s@"{{LOCALNET2}}"@"$LOCALNET2"@g $CONFIG_DIR/sip.conf
 sed -i s/"{{PABXID}}"/"$PABXID"/g $CONFIG_DIR/extensions.conf
 sed -i s/"{{PABX_SUF}}"/"$PABX_SUF"/g $CONFIG_DIR/extensions.conf
 echo "done!"
